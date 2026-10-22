@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 分析輸出
+*.csv
+FFT_Only*.png
+examples/*.tif
+examples/*.png

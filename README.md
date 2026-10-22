@@ -20,11 +20,13 @@
 需要 Python 3.8 以上（含 Tkinter，Windows / macOS 官方安裝程式已內建；Linux 可能需另外安裝 `python3-tk`）。
 
 ```bash
-git clone https://github.com/<your-account>/hrtem-fft-analyzer.git
-cd hrtem-fft-analyzer
+git clone https://github.com/songyi626/FFT.git
+cd FFT
 pip install -r requirements.txt
 python hrtem_fft_analyzer.py
 ```
+
+不使用 git 的話，也可以在 [repo 頁面](https://github.com/songyi626/FFT) 按 **Code → Download ZIP**，解壓縮後執行上面最後兩行。
 
 ## 使用流程
 
