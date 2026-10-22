@@ -1,8 +1,21 @@
 # HRTEM FFT Analyzer
 
-以 Python / Tkinter 製作的 HRTEM 影像 2D FFT（diffractogram）分析工具：空間校正、正方形 ROI 選取、在 FFT 上點選亮點量測 d-spacing 與晶面夾角。
+HRTEM 影像 2D FFT（diffractogram）分析工具：空間校正、正方形 ROI 選取、在 FFT 上點選亮點量測 d-spacing 與晶面夾角。
 
-*A small desktop tool for computing 2D FFT diffractograms of HRTEM images, with nm/pixel calibration, square ROI selection, and click-to-measure d-spacings and interplanar angles.*
+**線上版（免安裝）：https://songyi626.github.io/FFT/**　影像只在瀏覽器裡處理，不會上傳。
+
+*Compute 2D FFT diffractograms of HRTEM images with nm/pixel calibration, square ROI selection, and click-to-measure d-spacings and interplanar angles — in the browser, or as a Python desktop app.*
+
+## 兩種版本
+
+| | 線上版（`docs/`） | 桌面版（`hrtem_fft_analyzer.py`） |
+|---|---|---|
+| 安裝 | 不需要，打開網址即可 | Python + numpy / OpenCV / matplotlib |
+| ROI 邊長 | 2 的冪次，最大 2048 | 2 的冪次或最大正方形 |
+| 背景扣除 | 三次 box blur 近似高斯（差異僅在 DC 附近） | OpenCV 高斯模糊 |
+| 其他 | 示範影像、ImageJ TIFF 自動讀取 nm/pixel、含標記 FFT 圖與 ROI 圖下載 | — |
+
+兩者的處理流程、座標慣例與 CSV 格式相同。
 
 ## 功能
 

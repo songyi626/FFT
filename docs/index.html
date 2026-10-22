@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HRTEM FFT Analyzer</title>
+<meta name="description" content="在瀏覽器中計算 HRTEM 影像的 2D FFT，校正後點選亮點量測 d-spacing 與晶面夾角。影像不會上傳。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site">
+  <div class="site-title">
+    <h1>HRTEM FFT Analyzer</h1>
+    <p>計算 HRTEM 影像的 2D FFT，點選亮點量測 d-spacing 與晶面夾角。影像只在你的瀏覽器裡處理，不會上傳。</p>
+  </div>
+  <nav class="site-links">
+    <a href="#notes">FFT 與 SAED 的差異</a>
+    <a href="https://github.com/songyi626/FFT">GitHub 原始碼</a>
+  </nav>
+</header>
+
+<main class="bench">
+  <aside class="controls" aria-label="分析設定">
+    <section class="step">
+      <h2><span class="n">1</span>影像</h2>
+      <div class="row">
+        <label class="btn primary" for="file">選擇影像</label>
+        <input type="file" id="file" accept=".tif,.tiff,.png,.jpg,.jpeg,.bmp" class="visually-hidden">
+        <button type="button" id="btnDemo" class="btn">載入示範影像</button>
+      </div>
+      <p id="fileInfo" class="note">支援 TIFF（8 / 16 / 32-bit）、PNG、JPG、BMP，也可以直接拖曳到頁面上。</p>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">2</span>空間校正</h2>
+      <label class="field">nm / pixel
+        <input id="nmpx" type="number" step="any" min="0" placeholder="未校正" inputmode="decimal">
+      </label>
+      <button type="button" id="btnScale" class="btn" disabled>在影像上量比例尺</button>
+      <p id="calInfo" class="note">未校正時，k 與 d 以 pixel 為單位。</p>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">3</span>ROI</h2>
+      <label class="field">邊長 (px)
+        <select id="roiSize" disabled></select>
+      </label>
+      <button type="button" id="btnCenter" class="btn" disabled>ROI 置中</button>
+      <p class="note">在左側影像上點一下，把 ROI 移到該處。邊長限 2 的冪次，最大 2048。</p>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">4</span>處理與顯示</h2>
+      <label class="field">窗函數
+        <select id="window"><option>Hanning</option><option>Hamming</option><option>None</option></select>
+      </label>
+      <label class="field">色盤
+        <select id="cmap"><option>inferno</option><option>magma</option><option>plasma</option><option>viridis</option><option>gray</option></select>
+      </label>
+      <div class="level">
+        <label for="pminR">色階下限 (%)</label>
+        <input type="range" id="pminR" min="0" max="100" step="0.05" value="2">
+        <input type="number" id="pmin" min="0" max="99.9" step="0.05" value="2" aria-label="色階下限 (%)">
+      </div>
+      <div class="level">
+        <label for="pmaxR">色階上限 (%)</label>
+        <input type="range" id="pmaxR" min="0" max="100" step="0.05" value="99.8">
+        <input type="number" id="pmax" min="0.1" max="100" step="0.05" value="99.8" aria-label="色階上限 (%)">
+      </div>
+    </section>
+  </aside>
+
+  <div class="work">
+    <div class="viewers">
+      <figure class="viewer">
+        <figcaption>
+          <span class="vt">實空間</span>
+          <span id="roiInfo" class="vmeta"></span>
+          <span class="zoom" data-viewer="real">
+            <button type="button" data-z="in" aria-label="放大">＋</button>
+            <button type="button" data-z="out" aria-label="縮小">－</button>
+            <button type="button" data-z="fit">適應</button>
+          </span>
+        </figcaption>
+        <canvas id="cvReal" tabindex="0" aria-label="實空間影像"></canvas>
+        <div class="readout" id="roReal">&nbsp;</div>
+      </figure>
+      <figure class="viewer">
+        <figcaption>
+          <span class="vt">2D FFT</span>
+          <span id="fftInfo" class="vmeta"></span>
+          <span class="zoom" data-viewer="fft">
+            <button type="button" data-z="in" aria-label="放大">＋</button>
+            <button type="button" data-z="out" aria-label="縮小">－</button>
+            <button type="button" data-z="fit">適應</button>
+          </span>
+        </figcaption>
+        <canvas id="cvFFT" tabindex="0" aria-label="FFT 頻譜"></canvas>
+        <div class="readout" id="roFFT">&nbsp;</div>
+      </figure>
+    </div>
+    <p class="howto">滾輪縮放、拖曳平移、雙擊適應視窗。FFT 上左鍵點亮點加入量測，右鍵刪除最近的點。</p>
+
+    <section class="measure" aria-labelledby="mTitle">
+      <div class="measure-head">
+        <h2 id="mTitle">d-spacing 量測</h2>
+        <label class="inline"><input type="checkbox" id="snap" checked> 自動吸附亮點中心</label>
+        <label class="inline">吸附半徑 <input type="number" id="snapR" value="6" min="1" max="30"> px</label>
+      </div>
+      <div class="table-wrap">
+        <table id="tbl">
+          <thead>
+            <tr><th scope="col">比較</th><th scope="col">#</th><th scope="col" id="thK">|k| (px⁻¹)</th><th scope="col" id="thD">d (px)</th><th scope="col">d (Å)</th><th scope="col">方位角 (°)</th><th scope="col"><span class="visually-hidden">刪除</span></th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p id="empty" class="empty">還沒有量測點。載入影像後，在 FFT 圖上點擊亮點。</p>
+      </div>
+      <p id="angleBox" class="angle">勾選兩個點，比較夾角與 d 比值。</p>
+      <div class="actions">
+        <button type="button" id="btnCSV" class="btn" disabled>匯出 CSV</button>
+        <button type="button" id="btnClear" class="btn" disabled>清除量測點</button>
+        <button type="button" id="btnPNG" class="btn" disabled>下載 FFT 圖</button>
+        <button type="button" id="btnPNGm" class="btn" disabled>下載含標記的 FFT 圖</button>
+        <button type="button" id="btnROI" class="btn" disabled>下載 ROI 實空間圖</button>
+      </div>
+    </section>
+
+    <section class="notes" id="notes">
+      <h2>FFT 與 SAED 的差異</h2>
+      <p>HRTEM 影像的 FFT 是<strong>影像強度</strong>的傅立葉轉換，不是電子繞射圖。亮點的位置可以用來判斷晶面間距、晶面夾角、對稱性與帶軸；亮點的強度則受物鏡 CTF、defocus 與樣品厚度調制，不能定量，影像的非線性還可能產生看起來像禁制反射的交叉項。可見的最高頻受顯微鏡 information limit 限制，而且 FFT 只反映 ROI 內的局部結構。報告中建議稱為 FFT pattern 或 diffractogram。</p>
+      <h2>定義</h2>
+      <p>k 為空間頻率（cycles / nm，不含 2π），d = 1 / |k|。頻域解析度 Δk = 1 / (N · nm_per_px)，N 為 ROI 邊長；最小可解析 d 為 2 · nm_per_px。FFT 中 kᵧ 向上為正，方位角由 +kₓ 逆時針計算。處理流程：ROI → 高斯背景扣除 → 窗函數 → 2D FFT，與 GitHub 上的 Python 桌面版相同。</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot">
+  <p>© 2026 Song-Yi Chan，以 MIT 授權釋出。</p>
+</footer>
+
+<div id="drop" class="drop" hidden><p>放開以載入影像</p></div>
+<div id="busy" class="busy" hidden role="status"><p id="busyText">計算中…</p></div>
+
+<script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
+<script src="colormaps.js"></script>
+<script src="fft-core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
